@@ -23,6 +23,10 @@ install(DIRECTORY dsdl DESTINATION share/uavcan)
 execute_process(COMMAND ./setup.py build WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pyuavcan)
 install(CODE "execute_process(COMMAND ./setup.py install WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pyuavcan)")
 
+include_directories(
+    libuavcan/include/
+    libuavcan/include/dsdlc_generated)
+
 #
 # libuavcan
 #
@@ -34,4 +38,7 @@ add_subdirectory(libuavcan)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     message(STATUS "Adding Linux support library")
     add_subdirectory(libuavcan_drivers/linux)
-endif ()
+elseif(${UAVCAN_PLATFORM} STREQUAL "stm32")
+    message(STATUS "Adding STM32 platform driver")
+    add_subdirectory(libuavcan_drivers/stm32/driver)
+endif()
