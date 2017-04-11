@@ -5,6 +5,7 @@
 #if __GNUC__
 // We need auto_ptr for compatibility reasons
 # pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+# pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
 #endif
 
 #include <gtest/gtest.h>
@@ -43,7 +44,7 @@ public:
     virtual NodeAwareness checkNodeAwareness(uavcan::NodeID node_id) const
     {
         const NodeInfo* const ni = const_cast<NodeDiscoveryHandler*>(this)->findNode(node_id);
-        if (ni == NULL)
+        if (ni == UAVCAN_NULLPTR)
         {
             return NodeAwarenessUnknown;
         }
@@ -53,7 +54,7 @@ public:
     virtual void handleNewNodeDiscovery(const UniqueID* unique_id_or_null, uavcan::NodeID node_id)
     {
         NodeInfo info;
-        if (unique_id_or_null != NULL)
+        if (unique_id_or_null != UAVCAN_NULLPTR)
         {
             info.unique_id = *unique_id_or_null;
         }
@@ -70,7 +71,7 @@ public:
                 return &nodes.at(i);
             }
         }
-        return NULL;
+        return UAVCAN_NULLPTR;
     }
 
     NodeInfo* findNode(const uavcan::NodeID& node_id)
@@ -82,7 +83,7 @@ public:
                 return &nodes.at(i);
             }
         }
-        return NULL;
+        return UAVCAN_NULLPTR;
     }
 };
 
@@ -135,7 +136,7 @@ TEST(dynamic_node_id_server_NodeDiscoverer, Basic)
     std::cout << "!!! Enabling discovery" << std::endl;
     handler.can_discover = true;
 
-    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(650));
+    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(1150));
 
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryNewNodeFound));
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryTimerStart));
@@ -152,7 +153,7 @@ TEST(dynamic_node_id_server_NodeDiscoverer, Basic)
     node_status.uptime_sec += 5U;
     ASSERT_LE(0, node_status_pub.broadcast(node_status));
 
-    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(650));
+    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(1250));
 
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryNewNodeFound));
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryTimerStart));
@@ -172,7 +173,7 @@ TEST(dynamic_node_id_server_NodeDiscoverer, Basic)
     get_node_info_server.response.hardware_version.unique_id[14] = 52;
     ASSERT_LE(0, get_node_info_server.start());
 
-    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(500));
+    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(1000));
 
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryNewNodeFound));
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryTimerStart));
@@ -224,7 +225,7 @@ TEST(dynamic_node_id_server_NodeDiscoverer, RestartAndMaxAttempts)
     node_status.uptime_sec = 10;                        // Nonzero
     ASSERT_LE(0, node_status_pub.broadcast(node_status));
 
-    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(1600));
+    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(3100));
 
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryNewNodeFound));
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryTimerStart));
@@ -241,7 +242,7 @@ TEST(dynamic_node_id_server_NodeDiscoverer, RestartAndMaxAttempts)
     node_status.uptime_sec = 9;                         // Less than previous
     ASSERT_LE(0, node_status_pub.broadcast(node_status));
 
-    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(1600));
+    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(3100));
 
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryNewNodeFound));
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryTimerStart));
@@ -255,7 +256,7 @@ TEST(dynamic_node_id_server_NodeDiscoverer, RestartAndMaxAttempts)
     /*
      * Waiting for timeout
      */
-    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(1600));
+    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(3100));
 
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryNewNodeFound));
     ASSERT_EQ(1, tracer.countEvents(TraceDiscoveryTimerStart));

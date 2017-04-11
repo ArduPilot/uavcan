@@ -2,6 +2,12 @@
  * Copyright (C) 2014 Pavel Kirienko <pavel.kirienko@gmail.com>
  */
 
+#if __GNUC__
+// We need auto_ptr for compatibility reasons
+# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+# pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
+#endif
+
 #include <string>
 #include <cstdio>
 #include <memory>
@@ -68,7 +74,7 @@ TEST(Multiset, Basic)
 {
     using uavcan::Multiset;
 
-    static const int POOL_BLOCKS = 3;
+    static const int POOL_BLOCKS = 4;
     uavcan::PoolAllocator<uavcan::MemPoolBlockSize * POOL_BLOCKS, uavcan::MemPoolBlockSize> pool;
 
     typedef Multiset<std::string> MultisetType;
@@ -89,19 +95,14 @@ TEST(Multiset, Basic)
     ASSERT_LE(1, pool.getNumUsedBlocks());      // One or more
     ASSERT_EQ(2, mset->getSize());
 
-    // Ordering
-    ASSERT_TRUE(*mset->getByIndex(0) == "1");
-    ASSERT_TRUE(*mset->getByIndex(1) == "2");
-
     {
         StringConcatenationOperator op;
         mset->forEach<StringConcatenationOperator&>(op);
-        ASSERT_EQ("12", op.accumulator);
+        ASSERT_EQ(2, op.accumulator.size());
     }
 
     // Dynamic addition
     ASSERT_EQ("3", *mset->emplace("3"));
-    ASSERT_EQ("3", *mset->getByIndex(2));
     ASSERT_LE(1, pool.getNumUsedBlocks());      // One or more
 
     ASSERT_EQ("4", *mset->emplace("4"));
@@ -136,9 +137,9 @@ TEST(Multiset, Basic)
     {
         const std::string value = toString(i);
         std::string* res = mset->emplace(value);  // Will NOT override above
-        if (res == NULL)
+        if (res == UAVCAN_NULLPTR)
         {
-            ASSERT_LT(2, i);
+            ASSERT_LT(1, i);
             break;
         }
         else

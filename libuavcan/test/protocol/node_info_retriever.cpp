@@ -5,6 +5,7 @@
 #if __GNUC__
 // We need auto_ptr for compatibility reasons
 # pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+# pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
 #endif
 
 #include <memory>
@@ -254,7 +255,7 @@ TEST(NodeInfoRetriever, MaxConcurrentRequests)
 
     ASSERT_EQ(40, retr.getRequestInterval().toMSec());
 
-    const unsigned MaxPendingRequests = 14;             // See class docs
+    const unsigned MaxPendingRequests = 26;             // See class docs
     const unsigned MinPendingRequestsAtFullLoad = 12;
 
     /*

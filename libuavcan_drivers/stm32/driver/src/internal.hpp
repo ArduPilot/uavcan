@@ -14,7 +14,10 @@
 # include <chip/stm32_tim.h>
 # include <syslog.h>
 #elif UAVCAN_STM32_BAREMETAL
+#include <chip.h>	// See http://uavcan.org/Implementations/Libuavcan/Platforms/STM32/
+#elif UAVCAN_STM32_FREERTOS
 # include <chip.h>
+# include <cmsis_os.h>
 #else
 # error "Unknown OS"
 #endif
@@ -23,10 +26,10 @@
  * Debug output
  */
 #ifndef UAVCAN_STM32_LOG
-// lowsyslog() crashes the system in this context
+// syslog() crashes the system in this context
 // # if UAVCAN_STM32_NUTTX && CONFIG_ARCH_LOWPUTC
 # if 0
-#  define UAVCAN_STM32_LOG(fmt, ...)  lowsyslog("uavcan_stm32: " fmt "\n", ##__VA_ARGS__)
+#  define UAVCAN_STM32_LOG(fmt, ...)  syslog("uavcan_stm32: " fmt "\n", ##__VA_ARGS__)
 # else
 #  define UAVCAN_STM32_LOG(...)       ((void)0)
 # endif
@@ -56,7 +59,7 @@
 # ifndef UAVCAN_STM32_IRQ_PRIORITY_MASK
 #  if (CH_KERNEL_MAJOR == 2)
 #   define UAVCAN_STM32_IRQ_PRIORITY_MASK  CORTEX_PRIORITY_MASK(CORTEX_MAX_KERNEL_PRIORITY)
-#  else // ChibiOS 3
+#  else // ChibiOS 3+
 #   define UAVCAN_STM32_IRQ_PRIORITY_MASK  CORTEX_MAX_KERNEL_PRIORITY
 #  endif
 # endif
@@ -68,6 +71,15 @@
  */
 # ifndef UAVCAN_STM32_IRQ_PRIORITY_MASK
 #  define UAVCAN_STM32_IRQ_PRIORITY_MASK  0
+# endif
+#endif
+
+#if UAVCAN_STM32_FREERTOS
+/**
+ * Priority mask for timer and CAN interrupts.
+ */
+# ifndef UAVCAN_STM32_IRQ_PRIORITY_MASK
+#  define UAVCAN_STM32_IRQ_PRIORITY_MASK  configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
 # endif
 #endif
 
@@ -97,12 +109,12 @@ struct CriticalSectionLocker
     const irqstate_t flags_;
 
     CriticalSectionLocker()
-        : flags_(irqsave())
+        : flags_(enter_critical_section())
     { }
 
     ~CriticalSectionLocker()
     {
-        irqrestore(flags_);
+        leave_critical_section(flags_);
     }
 };
 
@@ -119,6 +131,22 @@ struct CriticalSectionLocker
     ~CriticalSectionLocker()
     {
       __enable_irq();
+    }
+};
+
+#elif UAVCAN_STM32_FREERTOS
+
+struct CriticalSectionLocker
+{
+
+    CriticalSectionLocker()
+    {
+        taskENTER_CRITICAL();
+    }
+
+    ~CriticalSectionLocker()
+    {
+        taskEXIT_CRITICAL();
     }
 };
 

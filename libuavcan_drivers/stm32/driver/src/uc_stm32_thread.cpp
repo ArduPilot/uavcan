@@ -7,6 +7,7 @@
 #include <uavcan_stm32/can.hpp>
 #include "internal.hpp"
 
+
 namespace uavcan_stm32
 {
 
@@ -25,7 +26,7 @@ bool BusEvent::wait(uavcan::MonotonicDuration duration)
     {
 # if (CH_KERNEL_MAJOR == 2)
         ret = sem_.waitTimeout(TIME_IMMEDIATE);
-# else // ChibiOS 3
+# else // ChibiOS 3+
         ret = sem_.wait(TIME_IMMEDIATE);
 # endif
     }
@@ -33,13 +34,13 @@ bool BusEvent::wait(uavcan::MonotonicDuration duration)
     {
 # if (CH_KERNEL_MAJOR == 2)
         ret = sem_.waitTimeout((msec > MaxDelayMSec) ? MS2ST(MaxDelayMSec) : MS2ST(msec));
-# else // ChibiOS 3
+# else // ChibiOS 3+
         ret = sem_.wait((msec > MaxDelayMSec) ? MS2ST(MaxDelayMSec) : MS2ST(msec));
 # endif
     }
 # if (CH_KERNEL_MAJOR == 2)
     return ret == RDY_OK;
-# else // ChibiOS 3
+# else // ChibiOS 3+
     return ret == MSG_OK;
 # endif
 }
@@ -55,7 +56,7 @@ void BusEvent::signalFromInterrupt()
     chSysLockFromIsr();
     sem_.signalI();
     chSysUnlockFromIsr();
-# else // ChibiOS 3
+# else // ChibiOS 3+
     chSysLockFromISR();
     sem_.signalI();
     chSysUnlockFromISR();
@@ -74,10 +75,63 @@ void Mutex::unlock()
 {
 # if (CH_KERNEL_MAJOR == 2)
     chibios_rt::BaseThread::unlockMutex();
-# else // ChibiOS 3
+# else // ChibiOS 3+
     mtx_.unlock();
 # endif
 }
+
+
+#elif UAVCAN_STM32_FREERTOS
+
+bool BusEvent::wait(uavcan::MonotonicDuration duration)
+{
+    static const uavcan::int64_t MaxDelayMSec = 0x000FFFFF;
+
+    const uavcan::int64_t msec = duration.toMSec();
+
+    BaseType_t ret;
+
+    if (msec <= 0)
+    {
+        ret = xSemaphoreTake( sem_, ( TickType_t ) 0 );
+    }
+    else
+    {
+        ret = xSemaphoreTake( sem_, (msec > MaxDelayMSec) ? (MaxDelayMSec/portTICK_RATE_MS) : (msec/portTICK_RATE_MS));
+    }
+    return ret == pdTRUE;
+}
+
+void BusEvent::signal()
+{
+    xSemaphoreGive( sem_ );
+}
+
+void BusEvent::signalFromInterrupt()
+{
+    higher_priority_task_woken = pdFALSE;
+
+    xSemaphoreGiveFromISR( sem_, &higher_priority_task_woken );
+}
+
+void BusEvent::yieldFromISR()
+{
+    portYIELD_FROM_ISR( higher_priority_task_woken );
+}
+
+/*
+ * Mutex
+ */
+void Mutex::lock()
+{
+    xSemaphoreTake( mtx_, portMAX_DELAY );
+}
+
+void Mutex::unlock()
+{
+    xSemaphoreGive( mtx_ );
+}
+
 
 #elif UAVCAN_STM32_NUTTX
 
@@ -146,7 +200,7 @@ int BusEvent::addPollWaiter(::pollfd* fds)
 {
     for (unsigned i = 0; i < MaxPollWaiters; i++)
     {
-        if (pollset_[i] == NULL)
+        if (pollset_[i] == UAVCAN_NULLPTR)
         {
             pollset_[i] = fds;
             return 0;
@@ -161,7 +215,7 @@ int BusEvent::removePollWaiter(::pollfd* fds)
     {
         if (fds == pollset_[i])
         {
-            pollset_[i] = NULL;
+            pollset_[i] = UAVCAN_NULLPTR;
             return 0;
         }
     }
@@ -214,7 +268,7 @@ void BusEvent::signalFromInterrupt()
     for (unsigned i = 0; i < MaxPollWaiters; i++)
     {
         ::pollfd* const fd = pollset_[i];
-        if (fd != NULL)
+        if (fd != UAVCAN_NULLPTR)
         {
             fd->revents |= fd->events & POLLIN;
             if ((fd->revents != 0) && (fd->sem->semcount <= 0))
