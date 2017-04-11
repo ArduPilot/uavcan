@@ -74,10 +74,10 @@ public:
  *      request interval [ms] = floor(5000 [ms] bootloader timeout / 123 nodes)
  * Which yields 40 ms.
  *
- * Given default service timeout 500 ms and the defined above request frequency 40 ms, the maximum number of
+ * Given default service timeout 1000 ms and the defined above request frequency 40 ms, the maximum number of
  * concurrent requests will be:
- *      max concurrent requests = ceil(500 [ms] timeout / 40 [ms] request interval)
- * Which yields 13 requests.
+ *      max concurrent requests = ceil(1000 [ms] timeout / 40 [ms] request interval)
+ * Which yields 25 requests.
  *
  * Keep the above equations in mind when changing the default request interval.
  *
@@ -131,7 +131,7 @@ private:
 
         bool operator()(INodeInfoListener* key)
         {
-            UAVCAN_ASSERT(key != NULL);
+            UAVCAN_ASSERT(key != UAVCAN_NULLPTR);
             key->handleNodeInfoRetrieved(node_id, node_info);
             return false;
         }
@@ -150,7 +150,7 @@ private:
 
         bool operator()(INodeInfoListener* key)
         {
-            UAVCAN_ASSERT(key != NULL);
+            UAVCAN_ASSERT(key != UAVCAN_NULLPTR);
             (key->*method)(event);
             return false;
         }
@@ -385,10 +385,10 @@ public:
      */
     int addListener(INodeInfoListener* listener)
     {
-        if (listener != NULL)
+        if (listener != UAVCAN_NULLPTR)
         {
             removeListener(listener);
-            return (NULL == listeners_.emplace(listener)) ? -ErrMemory : 0;
+            return (UAVCAN_NULLPTR == listeners_.emplace(listener)) ? -ErrMemory : 0;
         }
         else
         {
@@ -402,7 +402,7 @@ public:
      */
     void removeListener(INodeInfoListener* listener)
     {
-        if (listener != NULL)
+        if (listener != UAVCAN_NULLPTR)
         {
             listeners_.removeAll(listener);
         }
