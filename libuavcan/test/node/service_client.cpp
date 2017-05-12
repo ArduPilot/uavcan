@@ -43,7 +43,7 @@ struct ServiceCallResultHandler
         }
         else
         {
-            std::cout << "MISMATCH: status=" << last_status << ", last_server_node_id="
+            std::cout << "MISMATCH: status=" << int(last_status) << ", last_server_node_id="
                 << int(last_server_node_id.get()) << ", last response:\n" << last_response << std::endl;
             return false;
         }
@@ -281,7 +281,7 @@ TEST(ServiceClient, ConcurrentCalls)
         ASSERT_LT(0, client.call(1, request, last_call_id));
     }
 
-    ASSERT_LT(0, client.call(99, root_ns_a::StringService::Request()));         // Will timeout in 500 ms
+    ASSERT_LT(0, client.call(99, root_ns_a::StringService::Request()));         // Will timeout in 1000 ms
 
     client.setRequestTimeout(uavcan::MonotonicDuration::fromMSec(100));
 
@@ -342,9 +342,9 @@ TEST(ServiceClient, ConcurrentCalls)
     ASSERT_TRUE(handler.match(ResultType::ErrorTimeout, 88, root_ns_a::StringService::Response()));
 
     /*
-     * Validating the 500 ms timeout
+     * Validating the 1000 ms timeout
      */
-    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(500));
+    nodes.spinBoth(uavcan::MonotonicDuration::fromMSec(1000));
 
     ASSERT_FALSE(client.hasPendingCalls());
     ASSERT_EQ(0, client.getNumPendingCalls());                                  // All finished

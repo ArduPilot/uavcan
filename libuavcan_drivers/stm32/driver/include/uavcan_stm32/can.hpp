@@ -23,6 +23,7 @@ static const uavcan::int16_t ErrUnsupportedFrame        = 1004; ///< Frame not s
 static const uavcan::int16_t ErrMsrInakNotSet           = 1005; ///< INAK bit of the MSR register is not 1
 static const uavcan::int16_t ErrMsrInakNotCleared       = 1006; ///< INAK bit of the MSR register is not 0
 static const uavcan::int16_t ErrBitRateNotDetected      = 1007; ///< Auto bit rate detection could not be finished
+static const uavcan::int16_t ErrFilterNumConfigs        = 1008; ///< Number of filters is more than supported
 
 /**
  * RX queue item.
@@ -188,7 +189,13 @@ public:
     bool isRxBufferEmpty() const;
 
     /**
-     * Total number of hardware failures.
+     * Number of RX frames lost due to queue overflow.
+     * This is an atomic read, it doesn't require a critical section.
+     */
+    uavcan::uint32_t getRxQueueOverflowCount() const { return rx_queue_.getOverflowCount(); }
+
+    /**
+     * Total number of hardware failures and other kinds of errors (e.g. queue overruns).
      * May increase continuously if the interface is not connected to the bus.
      */
     virtual uavcan::uint64_t getErrorCount() const;
@@ -201,13 +208,13 @@ public:
     uavcan::uint32_t getVoluntaryTxAbortCount() const { return served_aborts_cnt_; }
 
     /**
-     * Returns number of frames pending in the RX queue.
+     * Returns the number of frames pending in the RX queue.
      * This is intended for debug use only.
      */
     unsigned getRxQueueLength() const;
 
     /**
-     * Whether this iface had at least one successful IO since previous call of this method.
+     * Whether this iface had at least one successful IO since the previous call of this method.
      * This is designed for use with iface activity LEDs.
      */
     bool hadActivity();
@@ -217,7 +224,7 @@ public:
      * Range is [1, 3].
      * Value of 3 suggests that priority inversion could be taking place.
      */
-    uavcan::uint8_t getPeakNumTxMailboxesUsed() const { return peak_tx_mailbox_index_ + 1; }
+    uavcan::uint8_t getPeakNumTxMailboxesUsed() const { return uavcan::uint8_t(peak_tx_mailbox_index_ + 1); }
 };
 
 /**
@@ -282,7 +289,7 @@ public:
  * Normally only this class should be used by the application.
  * 145 usec per Extended CAN frame @ 1 Mbps, e.g. 32 RX slots * 145 usec --> 4.6 msec before RX queue overruns.
  */
-template <unsigned RxQueueCapacity = 32>
+template <unsigned RxQueueCapacity = 128>
 class CanInitHelper
 {
     CanRxItem queue_storage_[UAVCAN_STM32_NUM_IFACES][RxQueueCapacity];
