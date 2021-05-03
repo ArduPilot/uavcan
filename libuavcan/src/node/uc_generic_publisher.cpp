@@ -28,7 +28,7 @@ int GenericPublisherBase::doInit(DataTypeKind dtkind, const char* dtname, CanTxQ
         return -ErrUnknownDataType;
     }
 
-    sender_.init(*descr, qos);
+    sender_.init(*descr, qos, canfd_frames_);
 
     return 0;
 }

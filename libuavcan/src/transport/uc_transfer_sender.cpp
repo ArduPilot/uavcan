@@ -15,20 +15,21 @@ void TransferSender::registerError() const
     dispatcher_.getTransferPerfCounter().addError();
 }
 
-void TransferSender::init(const DataTypeDescriptor& dtid, CanTxQueue::Qos qos)
+void TransferSender::init(const DataTypeDescriptor& dtid, CanTxQueue::Qos qos, bool canfd_frames)
 {
     UAVCAN_ASSERT(!isInitialized());
 
     qos_          = qos;
     data_type_id_ = dtid.getID();
     crc_base_     = dtid.getSignature().toTransferCRC();
+    canfd_frames_ = canfd_frames;
 }
 
 int TransferSender::send(const uint8_t* payload, unsigned payload_len, MonotonicTime tx_deadline,
                          MonotonicTime blocking_deadline, TransferType transfer_type, NodeID dst_node_id,
                          TransferID tid) const
 {
-    Frame frame(data_type_id_, transfer_type, dispatcher_.getNodeID(), dst_node_id, tid);
+    Frame frame(data_type_id_, transfer_type, dispatcher_.getNodeID(), dst_node_id, tid, canfd_frames_);
 
     frame.setPriority(priority_);
     frame.setStartOfTransfer(true);

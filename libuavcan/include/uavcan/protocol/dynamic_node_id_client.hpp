@@ -67,7 +67,7 @@ public:
 
     DynamicNodeIDClient(INode& node)
         : TimerBase(node)
-        , dnida_pub_(node)
+        , dnida_pub_(node, false)   // never use can fd for DNIDA
         , dnida_sub_(node)
         , size_of_received_unique_id_(0)
     { }

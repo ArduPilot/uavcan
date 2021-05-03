@@ -65,8 +65,8 @@ class UAVCAN_EXPORT RestartRequestServer : Noncopyable
     }
 
 public:
-    explicit RestartRequestServer(INode& node)
-        : srv_(node)
+    explicit RestartRequestServer(INode& node, bool &canfd_frames)
+        : srv_(node, canfd_frames)
         , handler_(UAVCAN_NULLPTR)
     { }
 

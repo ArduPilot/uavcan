@@ -220,10 +220,10 @@ namespace uavcan
 static const unsigned MemPoolBlockSize = UAVCAN_MEM_POOL_BLOCK_SIZE;
 #elif defined(__BIGGEST_ALIGNMENT__) && (__BIGGEST_ALIGNMENT__ <= 8)
 /// Convenient default for GCC-like compilers - if alignment allows, pool block size can be safely reduced.
-static const unsigned MemPoolBlockSize = 56;
+static const unsigned MemPoolBlockSize = 96;
 #else
 /// Safe default that should be OK for any platform.
-static const unsigned MemPoolBlockSize = 64;
+static const unsigned MemPoolBlockSize = 128;
 #endif
 
 #ifdef __BIGGEST_ALIGNMENT__

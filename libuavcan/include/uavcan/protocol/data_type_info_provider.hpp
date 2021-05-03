@@ -108,8 +108,8 @@ class UAVCAN_EXPORT DataTypeInfoProvider : Noncopyable
     }
 
 public:
-    explicit DataTypeInfoProvider(INode& node) :
-        gdti_srv_(node)
+    explicit DataTypeInfoProvider(INode& node, bool &canfd_frames) :
+        gdti_srv_(node, canfd_frames)
     { }
 
     int start()

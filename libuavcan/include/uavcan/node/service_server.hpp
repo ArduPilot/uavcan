@@ -140,9 +140,9 @@ private:
     }
 
 public:
-    explicit ServiceServer(INode& node)
+    explicit ServiceServer(INode& node, bool canfd_frames)
         : SubscriberType(node)
-        , publisher_(node, getDefaultTxTimeout())
+        , publisher_(node, canfd_frames, getDefaultTxTimeout())
         , callback_()
         , response_failure_count_(0)
     {

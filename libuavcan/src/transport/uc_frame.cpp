@@ -51,6 +51,8 @@ bool Frame::parse(const CanFrame& can_frame)
         return false;
     }
 
+    canfd_frame_ = can_frame.canfd;
+
     /*
      * CAN ID parsing
      */
@@ -85,10 +87,10 @@ bool Frame::parse(const CanFrame& can_frame)
     /*
      * CAN payload parsing
      */
-    payload_len_ = static_cast<uint8_t>(can_frame.dlc - 1U);
+    payload_len_ = static_cast<uint8_t>(CanFrame::dlcToDataLength(can_frame.dlc) - 1U);
     (void)copy(can_frame.data, can_frame.data + payload_len_, payload_);
 
-    const uint8_t tail = can_frame.data[can_frame.dlc - 1U];
+    const uint8_t tail = can_frame.data[CanFrame::dlcToDataLength(can_frame.dlc) - 1U];
 
     start_of_transfer_ = (tail & (1U << 7)) != 0;
     end_of_transfer_   = (tail & (1U << 6)) != 0;
@@ -159,11 +161,20 @@ bool Frame::compile(CanFrame& out_can_frame) const
 
     UAVCAN_ASSERT(payload_len_ < sizeof(static_cast<CanFrame*>(UAVCAN_NULLPTR)->data));
 
-    out_can_frame.dlc = static_cast<uint8_t>(payload_len_);
+    out_can_frame.dlc = CanFrame::dataLengthToDlc(static_cast<uint8_t>(payload_len_));
     (void)copy(payload_, payload_ + payload_len_, out_can_frame.data);
 
-    out_can_frame.data[out_can_frame.dlc] = tail;
-    out_can_frame.dlc++;
+    if (payload_len_ < 8) {
+        out_can_frame.data[payload_len_] = tail;
+        out_can_frame.dlc++;
+    } else if (payload_len_ == CanFrame::dlcToDataLength(out_can_frame.dlc)){
+        out_can_frame.dlc++;
+        out_can_frame.data[CanFrame::dlcToDataLength(out_can_frame.dlc) - 1] = tail;
+    } else {
+        out_can_frame.data[CanFrame::dlcToDataLength(out_can_frame.dlc) - 1] = tail;
+    }
+
+    out_can_frame.canfd = canfd_frame_;
 
     /*
      * Discriminator
