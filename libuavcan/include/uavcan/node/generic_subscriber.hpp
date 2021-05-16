@@ -75,6 +75,7 @@ public:
     NodeID getSrcNodeID()            const { return safeget<NodeID, &IncomingTransfer::getSrcNodeID>(); }
     uint8_t getIfaceIndex()          const { return safeget<uint8_t, &IncomingTransfer::getIfaceIndex>(); }
     bool isAnonymousTransfer()       const { return safeget<bool, &IncomingTransfer::isAnonymousTransfer>(); }
+    bool isCanFDTransfer()           const { return safeget<bool, &IncomingTransfer::isCanFDTransfer>(); }
 };
 
 /**
@@ -260,7 +261,8 @@ void GenericSubscriber<DataSpec, DataStruct, TransferListenerType>::handleIncomi
     BitStream bitstream(transfer);
     ScalarCodec codec(bitstream);
 
-    const int decode_res = DataStruct::decode(rx_struct, codec);
+    // disable tail array optimisation if CANFD transfer
+    const int decode_res = DataStruct::decode(rx_struct, codec, !transfer.isCanFDTransfer());
 
     // We don't need the data anymore, the memory can be reused from the callback:
     transfer.release();

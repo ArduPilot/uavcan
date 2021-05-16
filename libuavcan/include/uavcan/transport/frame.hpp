@@ -76,6 +76,8 @@ public:
 
     void setCanFD(bool set) { canfd_frame_ = set; }
 
+    bool isCanFDFrame() const { return canfd_frame_; }
+
     unsigned getPayloadLen() const { return payload_len_; }
     const uint8_t* getPayloadPtr() const { return payload_; }
 
