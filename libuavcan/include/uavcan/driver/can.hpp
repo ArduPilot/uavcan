@@ -131,6 +131,16 @@ struct UAVCAN_EXPORT CanFrame
         return 15;
     }
 
+    static uint8_t getNumPaddingBytes(uint16_t payload_len) {
+        if (payload_len > 63) {
+            // account for additional 2 bytes for CRC
+            payload_len+=2;
+        }
+        uint8_t padding = dlcToDataLength(dataLengthToDlc((payload_len % 63)+1))-1;
+        padding -= (payload_len % 63);
+        return padding;
+    }
+
 #if UAVCAN_TOSTRING
     enum StringRepresentation
     {

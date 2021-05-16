@@ -83,6 +83,14 @@ int TransferSender::send(const uint8_t* payload, unsigned payload_len, Monotonic
         {
             TransferCRC crc = crc_base_;
             crc.add(payload, payload_len);
+            // Take care of potential padding introduce in CANFD frames over 8Bytes
+            if (payload_len > 63 && frame.isCanFDFrame()) {
+                uint8_t empty = 0;
+                uint8_t padding = CanFrame::getNumPaddingBytes(payload_len);
+                for (uint8_t i=0; i<padding; i++) {
+                    crc.add(&empty, 1);
+                }
+            }
 
             static const int BUFLEN = sizeof(static_cast<CanFrame*>(0)->data);
             uint8_t buf[BUFLEN];
