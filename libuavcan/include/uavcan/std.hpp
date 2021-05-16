@@ -75,7 +75,7 @@ inline int snprintf(char* out, std::size_t maxlen, const char* format, ...)
     using namespace std;  // This way we can pull vsnprintf() either from std:: or from ::.
     va_list args;
     va_start(args, format);
-    const int return_value = vsnprintf(out, maxlen, format, args);
+    const int return_value = ::vsnprintf(out, maxlen, format, args);
     va_end(args);
     return return_value;
 }

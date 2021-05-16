@@ -262,7 +262,8 @@ void GenericSubscriber<DataSpec, DataStruct, TransferListenerType>::handleIncomi
     ScalarCodec codec(bitstream);
 
     // disable tail array optimisation if CANFD transfer
-    const int decode_res = DataStruct::decode(rx_struct, codec, !transfer.isCanFDTransfer());
+    TailArrayOptimizationMode tao_mode = transfer.isCanFDTransfer() ? TailArrayOptDisabled:TailArrayOptEnabled;
+    const int decode_res = DataStruct::decode(rx_struct, codec, tao_mode);
 
     // We don't need the data anymore, the memory can be reused from the callback:
     transfer.release();
