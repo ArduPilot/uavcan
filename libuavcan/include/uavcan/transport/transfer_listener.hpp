@@ -128,13 +128,15 @@ protected:
     void handleReception(TransferReceiver& receiver, const RxFrame& frame, TransferBufferAccessor& tba);
     void handleAnonymousTransferReception(const RxFrame& frame);
 
+    uint16_t actual_max_buffer_size(uint16_t max_buffer_size);
+
     virtual void handleIncomingTransfer(IncomingTransfer& transfer) = 0;
 
 public:
     TransferListener(TransferPerfCounter& perf, const DataTypeDescriptor& data_type,
                      uint16_t max_buffer_size, IPoolAllocator& allocator)
         : data_type_(data_type)
-        , bufmgr_(max_buffer_size, allocator)
+        , bufmgr_(actual_max_buffer_size(max_buffer_size), allocator)
         , receivers_(allocator)
         , perf_(perf)
         , crc_base_(data_type.getSignature().toTransferCRC())

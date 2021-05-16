@@ -187,6 +187,11 @@ void TransferListener::handleAnonymousTransferReception(const RxFrame& frame)
     }
 }
 
+uint16_t TransferListener::actual_max_buffer_size(uint16_t max_buffer_size)
+{
+    return max_buffer_size+CanFrame::getNumPaddingBytes(max_buffer_size);
+}
+
 TransferListener::~TransferListener()
 {
     // Map must be cleared before bufmgr is destroyed
