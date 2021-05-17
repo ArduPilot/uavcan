@@ -80,8 +80,8 @@ private:
     }
 
 public:
-    explicit Logger(INode& node)
-        : logmsg_pub_(node)
+    explicit Logger(INode& node, bool &canfd_frames)
+        : logmsg_pub_(node, canfd_frames)
         , external_sink_(UAVCAN_NULLPTR)
     {
         level_ = protocol::debug::LogLevel::ERROR;

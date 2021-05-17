@@ -53,11 +53,11 @@ public:
 
     typedef typename StorageType<typename protocol::GetNodeInfo::Response::FieldTypes::name>::Type NodeName;
 
-    explicit NodeStatusProvider(INode& node)
+    explicit NodeStatusProvider(INode& node, bool &canfd_frames)
         : TimerBase(node)
         , creation_timestamp_(node.getMonotonicTime())
-        , node_status_pub_(node)
-        , gni_srv_(node)
+        , node_status_pub_(node, canfd_frames)
+        , gni_srv_(node, canfd_frames)
     {
         UAVCAN_ASSERT(!creation_timestamp_.isZero());
 

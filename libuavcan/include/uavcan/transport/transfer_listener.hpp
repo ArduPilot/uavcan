@@ -30,6 +30,7 @@ class UAVCAN_EXPORT IncomingTransfer : public ITransferBuffer
     TransferID transfer_id_;
     NodeID src_node_id_;
     uint8_t iface_index_;
+    bool canfd_transfer_;
 
     /// That's a no-op, asserts in debug builds
     virtual int write(unsigned offset, const uint8_t* data, unsigned len) override;
@@ -37,7 +38,7 @@ class UAVCAN_EXPORT IncomingTransfer : public ITransferBuffer
 protected:
     IncomingTransfer(MonotonicTime ts_mono, UtcTime ts_utc, TransferPriority transfer_priority,
                      TransferType transfer_type, TransferID transfer_id, NodeID source_node_id,
-                     uint8_t iface_index)
+                     uint8_t iface_index, bool canfd_transfer)
         : ts_mono_(ts_mono)
         , ts_utc_(ts_utc)
         , transfer_priority_(transfer_priority)
@@ -45,6 +46,7 @@ protected:
         , transfer_id_(transfer_id)
         , src_node_id_(source_node_id)
         , iface_index_(iface_index)
+        , canfd_transfer_(canfd_transfer)
     { }
 
 public:
@@ -65,6 +67,7 @@ public:
     TransferID getTransferID()            const { return transfer_id_; }
     NodeID getSrcNodeID()                 const { return src_node_id_; }
     uint8_t getIfaceIndex()               const { return iface_index_; }
+    bool isCanFDTransfer()                const { return canfd_transfer_; }
 };
 
 /**
@@ -125,13 +128,15 @@ protected:
     void handleReception(TransferReceiver& receiver, const RxFrame& frame, TransferBufferAccessor& tba);
     void handleAnonymousTransferReception(const RxFrame& frame);
 
+    uint16_t actual_max_buffer_size(uint16_t max_buffer_size);
+
     virtual void handleIncomingTransfer(IncomingTransfer& transfer) = 0;
 
 public:
     TransferListener(TransferPerfCounter& perf, const DataTypeDescriptor& data_type,
                      uint16_t max_buffer_size, IPoolAllocator& allocator)
         : data_type_(data_type)
-        , bufmgr_(max_buffer_size, allocator)
+        , bufmgr_(actual_max_buffer_size(max_buffer_size), allocator)
         , receivers_(allocator)
         , perf_(perf)
         , crc_base_(data_type.getSignature().toTransferCRC())

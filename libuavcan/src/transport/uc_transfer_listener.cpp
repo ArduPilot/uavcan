@@ -23,7 +23,7 @@ int IncomingTransfer::write(unsigned, const uint8_t*, unsigned)
  */
 SingleFrameIncomingTransfer::SingleFrameIncomingTransfer(const RxFrame& frm)
     : IncomingTransfer(frm.getMonotonicTimestamp(), frm.getUtcTimestamp(), frm.getPriority(),
-                       frm.getTransferType(), frm.getTransferID(), frm.getSrcNodeID(), frm.getIfaceIndex())
+                       frm.getTransferType(), frm.getTransferID(), frm.getSrcNodeID(), frm.getIfaceIndex(), frm.isCanFDFrame())
     , payload_(frm.getPayloadPtr())
     , payload_len_(uint8_t(frm.getPayloadLen()))
 {
@@ -61,7 +61,7 @@ bool SingleFrameIncomingTransfer::isAnonymousTransfer() const
 MultiFrameIncomingTransfer::MultiFrameIncomingTransfer(MonotonicTime ts_mono, UtcTime ts_utc,
                                                        const RxFrame& last_frame, TransferBufferAccessor& tba)
     : IncomingTransfer(ts_mono, ts_utc, last_frame.getPriority(), last_frame.getTransferType(),
-                       last_frame.getTransferID(), last_frame.getSrcNodeID(), last_frame.getIfaceIndex())
+                       last_frame.getTransferID(), last_frame.getSrcNodeID(), last_frame.getIfaceIndex(), last_frame.isCanFDFrame())
     , buf_acc_(tba)
 {
     UAVCAN_ASSERT(last_frame.isValid());
@@ -185,6 +185,11 @@ void TransferListener::handleAnonymousTransferReception(const RxFrame& frame)
         SingleFrameIncomingTransfer it(frame);
         handleIncomingTransfer(it);
     }
+}
+
+uint16_t TransferListener::actual_max_buffer_size(uint16_t max_buffer_size)
+{
+    return max_buffer_size+CanFrame::getNumPaddingBytes(max_buffer_size);
 }
 
 TransferListener::~TransferListener()

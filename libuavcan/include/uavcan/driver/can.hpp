@@ -29,11 +29,16 @@ struct UAVCAN_EXPORT CanFrame
     static const uint32_t FlagRTR = 1U << 30;                  ///< Remote transmission request
     static const uint32_t FlagERR = 1U << 29;                  ///< Error frame
 
+#if UAVCAN_SUPPORT_CANFD
+    static const uint8_t MaxDataLen = 64;
+#else
     static const uint8_t MaxDataLen = 8;
+#endif
 
     uint32_t id;                ///< CAN ID with flags (above)
     uint8_t data[MaxDataLen];
     uint8_t dlc;                ///< Data Length Code
+    bool canfd;
 
     CanFrame() :
         id(0),
@@ -42,14 +47,41 @@ struct UAVCAN_EXPORT CanFrame
         fill(data, data + MaxDataLen, uint8_t(0));
     }
 
-    CanFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len) :
+    CanFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len, bool canfd_frame = false) :
         id(can_id),
-        dlc((data_len > MaxDataLen) ? MaxDataLen : data_len)
+        canfd(canfd_frame)
     {
         UAVCAN_ASSERT(can_data != UAVCAN_NULLPTR);
         UAVCAN_ASSERT(data_len == dlc);
-        (void)copy(can_data, can_data + dlc, this->data);
+        (void)copy(can_data, can_data + data_len, this->data);
+        if (data_len <= 8) {
+            dlc = data_len;
+        } else if (!canfd) {
+            dlc = 8;
+        } else {
+            /*
+            Data Length Code      9  10  11  12  13  14  15
+            Number of data bytes 12  16  20  24  32  48  64
+            */
+           if (data_len <= 12) {
+               dlc = 9;
+           } else if (data_len <= 16) {
+               dlc = 10;
+           } else if (data_len <= 20) {
+               dlc = 11;
+           } else if  (data_len <= 24) {
+               dlc = 12;
+           } else if (data_len <= 32) {
+               dlc = 13;
+           } else if (data_len <= 48) {
+               dlc = 14;
+           } else {
+               dlc = 15;
+           }
+        }
     }
+
+    bool isCanFDFrame() const { return canfd; }
 
     bool operator!=(const CanFrame& rhs) const { return !operator==(rhs); }
     bool operator==(const CanFrame& rhs) const
@@ -60,6 +92,58 @@ struct UAVCAN_EXPORT CanFrame
     bool isExtended()                  const { return id & FlagEFF; }
     bool isRemoteTransmissionRequest() const { return id & FlagRTR; }
     bool isErrorFrame()                const { return id & FlagERR; }
+
+    static uint8_t dlcToDataLength(uint8_t dlc) {
+        /*
+        Data Length Code      9  10  11  12  13  14  15
+        Number of data bytes 12  16  20  24  32  48  64
+        */
+        if (dlc <= 8) {
+            return dlc;
+        } else if (dlc == 9) {
+            return 12;
+        } else if (dlc == 10) {
+            return 16;
+        } else if (dlc == 11) {
+            return 20;
+        } else if (dlc == 12) {
+            return 24;
+        } else if (dlc == 13) {
+            return 32;
+        } else if (dlc == 14) {
+            return 48;
+        }
+        return 64;
+    }
+
+    static uint8_t dataLengthToDlc(uint8_t data_length) {
+        if (data_length <= 8) {
+            return data_length;
+        } else if (data_length <= 12) {
+            return 9;
+        } else if (data_length <= 16) {
+            return 10;
+        } else if (data_length <= 20) {
+            return 11;
+        } else if  (data_length <= 24) {
+            return 12;
+        } else if (data_length <= 32) {
+            return 13;
+        } else if (data_length <= 48) {
+            return 14;
+        }
+        return 15;
+    }
+
+    static uint8_t getNumPaddingBytes(uint16_t payload_len) {
+        if (payload_len > 63) {
+            // account for additional 2 bytes for CRC
+            payload_len+=2;
+        }
+        uint8_t padding = dlcToDataLength(dataLengthToDlc((payload_len % 63)+1))-1;
+        padding -= (payload_len % 63);
+        return padding;
+    }
 
 #if UAVCAN_TOSTRING
     enum StringRepresentation

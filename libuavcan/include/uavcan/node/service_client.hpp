@@ -277,11 +277,11 @@ public:
      * @param node      Node instance this client will be registered with.
      * @param callback  Callback instance. Optional, can be assigned later.
      */
-    explicit ServiceClient(INode& node, const Callback& callback = Callback())
+    explicit ServiceClient(INode& node, bool canfd_frames, const Callback& callback = Callback())
         : SubscriberType(node)
         , ServiceClientBase(node)
         , call_registry_(node.getAllocator())
-        , publisher_(node, getDefaultRequestTimeout())
+        , publisher_(node, canfd_frames, getDefaultRequestTimeout())
         , callback_(callback)
     {
         setPriority(TransferPriority::MiddleLower);

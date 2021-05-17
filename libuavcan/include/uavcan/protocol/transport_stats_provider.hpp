@@ -46,8 +46,8 @@ class UAVCAN_EXPORT TransportStatsProvider : Noncopyable
     }
 
 public:
-    explicit TransportStatsProvider(INode& node)
-        : srv_(node)
+    explicit TransportStatsProvider(INode& node, bool &canfd_frames)
+        : srv_(node, canfd_frames)
     { }
 
     /**

@@ -30,7 +30,7 @@ class UAVCAN_EXPORT TransferSender
     CanIOFlags flags_;
     uint8_t iface_mask_;
     bool allow_anonymous_transfers_;
-
+    bool canfd_frames_;
     void registerError() const;
 
 public:
@@ -42,7 +42,7 @@ public:
     }
 
     TransferSender(Dispatcher& dispatcher, const DataTypeDescriptor& data_type, CanTxQueue::Qos qos,
-                   MonotonicDuration max_transfer_interval = getDefaultMaxTransferInterval())
+                   bool canfd_frames, MonotonicDuration max_transfer_interval = getDefaultMaxTransferInterval())
         : max_transfer_interval_(max_transfer_interval)
         , dispatcher_(dispatcher)
         , priority_(TransferPriority::Default)
@@ -51,7 +51,7 @@ public:
         , iface_mask_(AllIfacesMask)
         , allow_anonymous_transfers_(false)
     {
-        init(data_type, qos);
+        init(data_type, qos, canfd_frames);
     }
 
     TransferSender(Dispatcher& dispatcher, MonotonicDuration max_transfer_interval = getDefaultMaxTransferInterval())
@@ -64,7 +64,7 @@ public:
         , allow_anonymous_transfers_(false)
     { }
 
-    void init(const DataTypeDescriptor& dtid, CanTxQueue::Qos qos);
+    void init(const DataTypeDescriptor& dtid, CanTxQueue::Qos qos, bool canfd_frames);
 
     bool isInitialized() const { return data_type_id_ != DataTypeID(); }
 
