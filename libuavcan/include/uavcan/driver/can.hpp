@@ -29,7 +29,11 @@ struct UAVCAN_EXPORT CanFrame
     static const uint32_t FlagRTR = 1U << 30;                  ///< Remote transmission request
     static const uint32_t FlagERR = 1U << 29;                  ///< Error frame
 
+#if UAVCAN_SUPPORT_CANFD
     static const uint8_t MaxDataLen = 64;
+#else
+    static const uint8_t MaxDataLen = 8;
+#endif
 
     uint32_t id;                ///< CAN ID with flags (above)
     uint8_t data[MaxDataLen];

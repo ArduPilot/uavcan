@@ -16,9 +16,12 @@ namespace uavcan
 
 class UAVCAN_EXPORT Frame
 {
+#if UAVCAN_SUPPORT_CANFD
     enum { NonFDCANPayloadCapacity = 7,
            PayloadCapacity = 63 };
-
+#else
+    enum { PayloadCapacity = 7 };
+#endif
     uint8_t payload_[PayloadCapacity];
     TransferPriority transfer_priority_;
     TransferType transfer_type_;
@@ -71,7 +74,11 @@ public:
     /**
      * Max payload length depends on the transfer type and frame index.
      */
+#if UAVCAN_SUPPORT_CANFD
     uint8_t getPayloadCapacity() const { return canfd_frame_?PayloadCapacity:NonFDCANPayloadCapacity; }
+#else
+    uint8_t getPayloadCapacity() const { return PayloadCapacity; }
+#endif
     uint8_t setPayload(const uint8_t* data, unsigned len);
 
     void setCanFD(bool set) { canfd_frame_ = set; }

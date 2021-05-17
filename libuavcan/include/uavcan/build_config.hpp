@@ -199,6 +199,14 @@
 # endif
 #endif
 
+/**
+ * This option allows to enable/disable CANFD frames support
+ * enabling CANFD support increases frame and buffer size requirements 
+ */
+#ifndef UAVCAN_SUPPORT_CANFD
+# define UAVCAN_SUPPORT_CANFD 0
+#endif
+
 namespace uavcan
 {
 /**
@@ -220,10 +228,18 @@ namespace uavcan
 static const unsigned MemPoolBlockSize = UAVCAN_MEM_POOL_BLOCK_SIZE;
 #elif defined(__BIGGEST_ALIGNMENT__) && (__BIGGEST_ALIGNMENT__ <= 8)
 /// Convenient default for GCC-like compilers - if alignment allows, pool block size can be safely reduced.
+#if UAVCAN_SUPPORT_CANFD
 static const unsigned MemPoolBlockSize = 96;
 #else
+static const unsigned MemPoolBlockSize = 56;
+#endif //UAVCAN_SUPPORT_CANFD
+#else
 /// Safe default that should be OK for any platform.
+#if UAVCAN_SUPPORT_CANFD
 static const unsigned MemPoolBlockSize = 128;
+#else
+static const unsigned MemPoolBlockSize = 64;
+#endif // UAVCAN_SUPPORT_CANFD
 #endif
 
 #ifdef __BIGGEST_ALIGNMENT__
